@@ -5,9 +5,10 @@ uniform sampler2D texture;
 const float PI = 3.14159265359;
 const float POV_DEGREES = 80.0;
 const float PROJECTION_DISTANCE = 1.0;
-const float BACKGROUND_DISTANCE = 100.0;
-const float SPEED_OF_LIGHT = 0.05;
+const float BACKGROUND_DISTANCE = 50.0;
+const float SPEED_OF_LIGHT = 1.0;
 const float BLACK_HOLE_RADIUS = 1.0;
+const float STEP_SIZE_FACTOR = 0.02;
 const int SIMULATION_STEPS = 500;
 const vec3 EYE = vec3(0.0, 0.0, 10.0);
 const vec3 VIEW = vec3(0.0, 0.0, -1.0);
@@ -61,7 +62,7 @@ vec4 background(Ray ray) {
     float theta = atan(p.x / p.z);
     float z = p.y;
 
-    //* Wave background for testing
+    /* Wave background for testing
     float y1 = 28.0 * sin(theta * 2.5 + 5.0) - 20.0;
     float y2 = 22.0 * sin(theta * 2.0 - 3.0) - 5.0;
     float y3 = 16.0 * sin(theta * 1.8 + 1.0) + 5.0;
@@ -90,6 +91,7 @@ Ray compute_ray_for_current_pixel() {
 
     vec3 up = vec3(0.0, 1.0, 0.0);
     vec4 look_from = vec4(EYE, 1.0);
+    look_from = vec4(time / 20.0, 0.0, 10.0, 1.0);
     vec3 w = normalize(VIEW);
     vec3 u = normalize(cross(up, w));
     vec3 v = cross(w, u);
@@ -118,15 +120,20 @@ bool simulate_black_hole(inout vec3 position, inout vec3 velocity) {
     float h2 = pow(length(cross(position, velocity)), 2.0);
     for (int i = 0; i < SIMULATION_STEPS; i++) {
         float r = length(position);
+        if (r >= BACKGROUND_DISTANCE) {
+            return false;
+        }
         if (r <= BLACK_HOLE_RADIUS) {
             return true;
         }
         // Fourth order Runge–Kutta integration
-        vec3 k1 = compute_force(position, h2);
-        vec3 k2 = compute_force(position + velocity + 0.5 * k1, h2);
-        vec3 k3 = compute_force(position + velocity + 0.5 * k2, h2);
-        vec3 k4 = compute_force(position + velocity + k3, h2);
-        position += velocity;
+        float step_size = r * STEP_SIZE_FACTOR;
+        vec3 delta = velocity * step_size;
+        vec3 k1 = step_size * compute_force(position, h2);
+        vec3 k2 = step_size * compute_force(position + delta + 0.5 * k1, h2);
+        vec3 k3 = step_size * compute_force(position + delta + 0.5 * k2, h2);
+        vec3 k4 = step_size * compute_force(position + delta + k3, h2);
+        position += delta;
         velocity += (k1 + 2.0 * (k2 + k3) + k4) / 6.0;
     }
     return false;
