@@ -1,17 +1,17 @@
 uniform float time;
 uniform vec2 resolution;
 uniform sampler2D texture;
+uniform vec4 camera_delta;
 
 const float PI = 3.14159265359;
-const float POV_DEGREES = 80.0;
+const float POV_DEGREES = 50.0;
 const float PROJECTION_DISTANCE = 1.0;
 const float BACKGROUND_DISTANCE = 50.0;
 const float SPEED_OF_LIGHT = 1.0;
 const float BLACK_HOLE_RADIUS = 1.0;
 const float STEP_SIZE_FACTOR = 0.02;
-const int SIMULATION_STEPS = 500;
-const vec3 EYE = vec3(0.0, 0.0, 10.0);
-const vec3 VIEW = vec3(0.0, 0.0, -1.0);
+const int SIMULATION_STEPS = 200;
+const vec3 EYE = vec3(0.0, 0.0, 20.0);
 
 struct Ray {
     vec4 origin;
@@ -32,6 +32,28 @@ mat4 scale(vec3 s) {
         s.x, 0, 0, 0,
         0, s.y, 0, 0,
         0, 0, s.z, 0,
+        0, 0, 0, 1
+    );
+}
+
+mat4 rotate_x_axis(float a) {
+    float c = cos(a);
+    float s = sin(a);
+    return mat4(
+        1, 0, 0, 0,
+        0, c, s, 0,
+        0, -s, c, 0,
+        0, 0, 0, 1
+    );
+}
+
+mat4 rotate_y_axis(float a) {
+    float c = cos(a);
+    float s = sin(a);
+    return mat4(
+        c, 0, -s, 0,
+        0, 1, 0, 0,
+        s, 0, c, 0,
         0, 0, 0, 1
     );
 }
@@ -90,9 +112,12 @@ Ray compute_ray_for_current_pixel() {
     mat4 s2 = scale(vec3(h / resolution.y, h / resolution.y, 1.0));
 
     vec3 up = vec3(0.0, 1.0, 0.0);
-    vec4 look_from = vec4(EYE, 1.0);
-    look_from = vec4(time / 20.0, 0.0, 10.0, 1.0);
-    vec3 w = normalize(VIEW);
+    vec4 look_from =
+        rotate_y_axis(camera_delta.x) *
+        rotate_x_axis(camera_delta.y) *
+        vec4(EYE, 1.0);
+
+    vec3 w = -normalize(vec3(look_from));
     vec3 u = normalize(cross(up, w));
     vec3 v = cross(w, u);
     mat4 r3 = mat4(vec4(u, 0.0), vec4(v, 0.0), vec4(w, 0.0), vec4(0.0, 0.0, 0.0, 1.0));
@@ -126,9 +151,9 @@ bool simulate_black_hole(inout vec3 position, inout vec3 velocity) {
         if (r <= BLACK_HOLE_RADIUS) {
             return true;
         }
-        // Fourth order Runge–Kutta integration
-        float step_size = r * STEP_SIZE_FACTOR;
+        float step_size = r * r * STEP_SIZE_FACTOR;
         vec3 delta = velocity * step_size;
+        // Fourth order Runge–Kutta integration
         vec3 k1 = step_size * compute_force(position, h2);
         vec3 k2 = step_size * compute_force(position + delta + 0.5 * k1, h2);
         vec3 k3 = step_size * compute_force(position + delta + 0.5 * k2, h2);
