@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Neural Network</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.4.1/knockout-min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.4/lodash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.5.0/d3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/3.9.1/math.min.js"></script>
+    <script src="src/expression.js"></script>
+    <script src="src/activation.js"></script>
+    <script src="src/network.js"></script>
+    <script src="src/graphvis.js"></script>
+    <script src="src/networkvis.js"></script>
+    <script src="src/app.js"></script>
+    <script src="src/main.js"></script>
+    <script src="src/tracker.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Ubuntu">
+    <link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+    <div class="col-md-6 left">
+        <svg class="network" viewBox="0 0 400 500"></svg>
+    </div>
+
+    <div class="col-md-6 right">
+        <svg class="graph" viewBox="0 0 400 300"></svg>
+
+        <div class="control-group">
+            <button type="button"
+                class="btn standard train"
+                data-bind="
+                    text: isTraining() ? 'Stop' : 'Train',
+                    click: onClickTrain,
+                    enable: isEveryExpressionValid()">
+            </button>
+            <button
+                type="button"
+                class="btn standard"
+                data-bind="click: onClickReset">
+                Reset
+            </button>
+            <button
+                type="button"
+                class="btn standard"
+                tabindex="0"
+                data-toggle="popover"
+                data-trigger="focus"
+                data-placement="top"
+                data-html="true"
+                data-content="
+                    To get started, simply press Random Example, then Train, and watch as the network learns to approximate the specified functions.
+                    <br><br>
+                    On the left is the neural network to be trained. The input nodes are marked with x, y, z, ... while the output nodes are marked with F1, F2, F3, ...
+                    <br><br>
+                    At the top right are graphs of the functions to train on. White plots are cross sections of actual functions while magenta plots are cross sections of learned functions.
+                    <br><br>
+                    At the bottom right are the function equations. Each input node corresponds to an available input variable and each output node is assigned a function equation.
+                    <br><br>
+                    During training, the network is fed randomly sampled values from the actual functions. The network attempts to approximate the functions from this data.">
+                Help
+            </button>
+            <button
+                type="button"
+                class="btn standard"
+                data-bind="click: onClickRandomExample">
+                Random Example
+            </button>
+
+            <div class="status-group">
+                <span
+                    class="status"
+                    data-bind="text: 'Iterations: ' + totalIterations()">
+                </span>
+                <span class="status divider"></span>
+                <span
+                    class="status"
+                    data-bind="text: 'Loss: ' + (isFinite(networkLoss()) ? networkLoss().toFixed(3) : '--')">
+                </span>
+            </div>
+
+            <div data-bind="template: { foreach: expressions }">
+
+                <div
+                    class="input-group"
+                    data-toggle="popover"
+                    data-placement="left"
+                    data-trigger="manual"
+                    data-bind="attr: { 'data-content': error }">
+                    <span
+                        class="input-group-addon"
+                        data-bind="text: $root.getFunctionSignature($index())">
+                    </span>
+                    <input
+                        class="form-control expression"
+                        type="text"
+                        data-bind="
+                            value: text, 
+                            disable: $root.isTraining(),
+                            event: { change: $root.onChangeExpression.bind($root) }">
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+
+</html>
