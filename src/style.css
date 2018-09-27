@@ -1,6 +1,7 @@
 body {
     overflow: hidden;
     margin: 0;
+    background-color: black;
 }
 
 div.footer {
@@ -15,3 +16,15 @@ div.footer > a {
     font-size: 16px;
     color: white;
 }
+
+div.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-family: monospace;
+    font-size: 16px;
+    color: white;
+}
+
