@@ -40,8 +40,8 @@ mat4 rotate_x_axis(float a) {
     float s = sin(a);
     return mat4(
         1, 0, 0, 0,
-        0, c, s, 0,
-        0, -s, c, 0,
+        0, c, -s, 0,
+        0, s, c, 0,
         0, 0, 0, 1
     );
 }
@@ -50,9 +50,9 @@ mat4 rotate_y_axis(float a) {
     float c = cos(a);
     float s = sin(a);
     return mat4(
-        c, 0, -s, 0,
+        c, 0, s, 0,
         0, 1, 0, 0,
-        s, 0, c, 0,
+        -s, 0, c, 0,
         0, 0, 0, 1
     );
 }
