@@ -32,8 +32,10 @@ function initWebGL(vertexShader, fragmentShader) {
     var renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
 
-    var container = $("#container");
+    var container = $("div.container");
     container.append(renderer.domElement);
+
+    showLoadingText("Loading textures");
 
     (new THREE.TextureLoader()).load("res/andromeda.jpg", function (texture) {
         var uniforms = {
@@ -58,6 +60,7 @@ function initWebGL(vertexShader, fragmentShader) {
         var camera = new THREE.Camera();
         var mouse = getMouse(container);
 
+        hideLoadingScreen();
         renderLoop(renderer, scene, camera, uniforms, mouse);
     });
 }
@@ -106,4 +109,12 @@ function getMouse(container) {
         mouse.z = Math.min(mouse.z, CAMERA_Z_BOUNDS.max);
     });
     return mouse;
+}
+
+function showLoadingText(text) {
+    $("div.loading p").text(text);
+}
+
+function hideLoadingScreen() {
+    $("div.loading").hide();
 }
