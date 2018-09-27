@@ -1,5 +1,5 @@
 var CAMERA_FACTOR = {
-    x: 0.002,
+    x: -0.002,
     y: 0.002,
     z: 0.01,
 };
@@ -79,7 +79,7 @@ function renderFrame(renderer, scene, camera) {
 
 function updateCamera(uniforms, mouse) {
     var x = (mouse.x - 0.5 * window.innerWidth) * CAMERA_FACTOR.x;
-    var y = -(mouse.y - 0.5 * window.innerHeight) * CAMERA_FACTOR.y;
+    var y = (mouse.y - 0.5 * window.innerHeight) * CAMERA_FACTOR.y;
     var z = mouse.z * CAMERA_FACTOR.z;
     uniforms.camera_delta.value.x +=
         (x - uniforms.camera_delta.value.x) * CAMERA_SMOOTHNESS;
