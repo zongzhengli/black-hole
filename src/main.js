@@ -20,11 +20,16 @@
 })();
 
 function initWebGL(vertexShader, fragmentShader) {
-    var CAMERA_DELTA_FACTOR = {
+    var CAMERA_FACTOR = {
         x: 0.002,
-        y: -0.002,
-    }
-    var CAMERA_SMOOTHING_FACTOR = 0.1;
+        y: 0.002,
+        z: 0.01,
+    };
+    var CAMERA_SMOOTHNESS = 0.1;
+    var CAMERA_Z_BOUNDS = {
+        min: -1600.0,
+        max: 4000.0,
+    };
 
     var startTime = Date.now();
     var center = {
@@ -38,18 +43,23 @@ function initWebGL(vertexShader, fragmentShader) {
     var container = $("#container");
     container.append(renderer.domElement);
 
-    var mouse = center;
+    var mouse = {
+        x: center.x,
+        y: center.y,
+        z: 0.0,
+    };
     container.on("mousemove", function(event) {
-        mouse = {
-            x: event.clientX,
-            y: event.clientY,
-        };
+        mouse.x = event.clientX;
+        mouse.y = event.clientY;
     });
     container.on("touchmove", function(event) {
-        mouse = {
-            x: event.touches[0].pageX,
-            y: event.touches[0].pageY,
-        };
+        mouse.x = event.touches[0].pageX;
+        mouse.y = event.touches[0].pageY;
+    });
+    container.on("wheel", function(event) {
+        mouse.z += event.originalEvent.deltaY;
+        mouse.z = Math.max(mouse.z, CAMERA_Z_BOUNDS.min);
+        mouse.z = Math.min(mouse.z, CAMERA_Z_BOUNDS.max);
     });
 
     (new THREE.TextureLoader()).load("res/andromeda.jpg", function (texture) {
@@ -90,12 +100,15 @@ function initWebGL(vertexShader, fragmentShader) {
         }
 
         function updateCamera() {
-            var x = (mouse.x - center.x) * CAMERA_DELTA_FACTOR.x;
-            var y = (mouse.y - center.y) * CAMERA_DELTA_FACTOR.y;
+            var x = (mouse.x - center.x) * CAMERA_FACTOR.x;
+            var y = -(mouse.y - center.y) * CAMERA_FACTOR.y;
+            var z = mouse.z * CAMERA_FACTOR.z;
             uniforms.camera_delta.value.x +=
-                (x - uniforms.camera_delta.value.x) * CAMERA_SMOOTHING_FACTOR;
+                (x - uniforms.camera_delta.value.x) * CAMERA_SMOOTHNESS;
             uniforms.camera_delta.value.y +=
-                (y - uniforms.camera_delta.value.y) * CAMERA_SMOOTHING_FACTOR;
+                (y - uniforms.camera_delta.value.y) * CAMERA_SMOOTHNESS;
+            uniforms.camera_delta.value.z +=
+                (z - uniforms.camera_delta.value.z) * CAMERA_SMOOTHNESS;
         }
     });
 }

@@ -6,12 +6,12 @@ uniform vec4 camera_delta;
 const float PI = 3.14159265359;
 const float POV_DEGREES = 50.0;
 const float PROJECTION_DISTANCE = 1.0;
-const float BACKGROUND_DISTANCE = 50.0;
+const float BACKGROUND_DISTANCE = 10000.0;
 const float SPEED_OF_LIGHT = 1.0;
 const float BLACK_HOLE_RADIUS = 1.0;
-const float STEP_SIZE_FACTOR = 0.02;
-const int SIMULATION_STEPS = 200;
-const vec3 EYE = vec3(0.0, 0.0, 20.0);
+const float STEP_SIZE_FACTOR = 0.01;
+const int MAX_SIMULATION_STEPS = 200;
+const vec3 DEFAULT_CAMERA = vec3(0.0, 0.0, 20.0);
 
 struct Ray {
     vec4 origin;
@@ -111,13 +111,13 @@ Ray compute_ray_for_current_pixel() {
     float h = 2.0 * PROJECTION_DISTANCE * tan(0.5 * theta);
     mat4 s2 = scale(vec3(h / resolution.y, h / resolution.y, 1.0));
 
-    vec3 up = vec3(0.0, 1.0, 0.0);
     vec4 look_from =
         rotate_y_axis(camera_delta.x) *
         rotate_x_axis(camera_delta.y) *
-        vec4(EYE, 1.0);
-
-    vec3 w = -normalize(vec3(look_from));
+        vec4(DEFAULT_CAMERA + vec3(0.0, 0.0, camera_delta.z), 1.0);
+    vec3 up = vec3(0.0, 1.0, 0.0);
+    vec3 view = -vec3(look_from);
+    vec3 w = normalize(view);
     vec3 u = normalize(cross(up, w));
     vec3 v = cross(w, u);
     mat4 r3 = mat4(vec4(u, 0.0), vec4(v, 0.0), vec4(w, 0.0), vec4(0.0, 0.0, 0.0, 1.0));
@@ -143,7 +143,7 @@ vec3 compute_force(vec3 position, float h2) {
 bool simulate_black_hole(inout vec3 position, inout vec3 velocity) {
     // Some constant needed to get geodesic equation to work
     float h2 = pow(length(cross(position, velocity)), 2.0);
-    for (int i = 0; i < SIMULATION_STEPS; i++) {
+    for (int i = 0; i < MAX_SIMULATION_STEPS; i++) {
         float r = length(position);
         if (r >= BACKGROUND_DISTANCE) {
             return false;
@@ -165,16 +165,8 @@ bool simulate_black_hole(inout vec3 position, inout vec3 velocity) {
 }
 
 void main() {
-    /*
-    float x = mod(time + gl_FragCoord.x, 20.0) < 10.0 ? 1.0 : 0.0;
-    float y = mod(time + gl_FragCoord.y, 20.0) < 10.0 ? 1.0 : 0.0;
-    gl_FragColor = vec4(vec3(min(x, y)), 1.0);
-    return;
-    //*/
-
     Ray ray = compute_ray_for_current_pixel();
 
-    //*
     vec3 position = vec3(ray.origin);
     vec3 velocity = SPEED_OF_LIGHT * normalize(vec3(ray.direction));
     if (simulate_black_hole(position, velocity)) {
@@ -183,7 +175,6 @@ void main() {
     }
     ray.origin = vec4(position, 1.0);
     ray.direction = vec4(velocity, 0.0);
-    //*/
 
     vec4 color = background(ray);
     gl_FragColor = color;
