@@ -1,4 +1,3 @@
-uniform float time;
 uniform vec2 resolution;
 uniform sampler2D texture;
 uniform vec4 camera_delta;
@@ -18,20 +17,20 @@ struct Ray {
     vec4 direction;
 };
 
-mat4 translate(vec3 t) {
+mat4 translate(float x, float y, float z) {
     return mat4(
         1, 0, 0, 0,
         0, 1, 0, 0,
         0, 0, 1, 0,
-        t.x, t.y, t.z, 1
+        x, y, z, 1
     );
 }
 
-mat4 scale(vec3 s) {
+mat4 scale(float x, float y, float z) {
     return mat4(
-        s.x, 0, 0, 0,
-        0, s.y, 0, 0,
-        0, 0, s.z, 0,
+        x, 0, 0, 0,
+        0, y, 0, 0,
+        0, 0, z, 0,
         0, 0, 0, 1
     );
 }
@@ -105,11 +104,11 @@ vec4 background(Ray ray) {
 
 Ray compute_ray_for_current_pixel() {
     // Do some transforms to get world coordinates of pixel
-    mat4 t1 = translate(vec3(-0.5 * resolution.x, -0.5 * resolution.y, PROJECTION_DISTANCE));
+    mat4 t1 = translate(-0.5 * resolution.x, -0.5 * resolution.y, PROJECTION_DISTANCE);
 
     float theta = radians(POV_DEGREES);
     float h = 2.0 * PROJECTION_DISTANCE * tan(0.5 * theta);
-    mat4 s2 = scale(vec3(h / resolution.y, h / resolution.y, 1.0));
+    mat4 s2 = scale(h / resolution.y, h / resolution.y, 1.0);
 
     vec4 look_from =
         rotate_y_axis(camera_delta.x) *
@@ -122,7 +121,7 @@ Ray compute_ray_for_current_pixel() {
     vec3 v = cross(w, u);
     mat4 r3 = mat4(vec4(u, 0.0), vec4(v, 0.0), vec4(w, 0.0), vec4(0.0, 0.0, 0.0, 1.0));
 
-    mat4 t4 = translate(vec3(look_from));
+    mat4 t4 = translate(look_from.x, look_from.y, look_from.z);
 
     vec4 p_pixel = vec4(gl_FragCoord.x, gl_FragCoord.y, 0.0, 1.0);
     vec4 p_world = t4 * r3 * s2 * t1 * p_pixel;
@@ -143,6 +142,7 @@ vec3 compute_force(vec3 position, float h2) {
 bool simulate_black_hole(inout vec3 position, inout vec3 velocity) {
     // Some constant needed to get geodesic equation to work
     float h2 = pow(length(cross(position, velocity)), 2.0);
+
     for (int i = 0; i < MAX_SIMULATION_STEPS; i++) {
         float r = length(position);
         if (r >= BACKGROUND_DISTANCE) {
@@ -153,11 +153,13 @@ bool simulate_black_hole(inout vec3 position, inout vec3 velocity) {
         }
         float step_size = r * r * STEP_SIZE_FACTOR;
         vec3 delta = velocity * step_size;
+
         // Fourth order Runge–Kutta integration
         vec3 k1 = step_size * compute_force(position, h2);
         vec3 k2 = step_size * compute_force(position + delta + 0.5 * k1, h2);
         vec3 k3 = step_size * compute_force(position + delta + 0.5 * k2, h2);
         vec3 k4 = step_size * compute_force(position + delta + k3, h2);
+
         position += delta;
         velocity += (k1 + 2.0 * (k2 + k3) + k4) / 6.0;
     }
