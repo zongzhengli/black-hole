@@ -2,3 +2,16 @@ body {
     overflow: hidden;
     margin: 0;
 }
+
+div.footer {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+}
+
+div.footer > a {
+    text-decoration: none;
+    font-family: monospace;
+    font-size: 16px;
+    color: white;
+}
