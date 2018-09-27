@@ -27,6 +27,10 @@ function initWebGL(vertexShader, fragmentShader) {
     var CAMERA_SMOOTHING_FACTOR = 0.1;
 
     var startTime = Date.now();
+    var center = {
+        x: 0.5 * window.innerWidth,
+        y: 0.5 * window.innerHeight,
+    };
 
     var renderer = new THREE.WebGLRenderer();
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -34,13 +38,17 @@ function initWebGL(vertexShader, fragmentShader) {
     var container = $("#container");
     container.append(renderer.domElement);
 
-    var mouse = null;
-    container.on("mousemove touchmove", function(event) {
-        var x = event.clientX || event.touches[0].pageX;
-        var y = event.clientY || event.touches[0].pageY;
+    var mouse = center;
+    container.on("mousemove", function(event) {
         mouse = {
-            current: { x: x, y: y },
-            initial: (mouse && mouse.initial) || { x: x, y: y },
+            x: event.clientX,
+            y: event.clientY,
+        };
+    });
+    container.on("touchmove", function(event) {
+        mouse = {
+            x: event.touches[0].pageX,
+            y: event.touches[0].pageY,
         };
     });
 
@@ -82,11 +90,8 @@ function initWebGL(vertexShader, fragmentShader) {
         }
 
         function updateCamera() {
-            if (mouse === null) {
-                return;
-            }
-            var x = (mouse.current.x - mouse.initial.x) * CAMERA_DELTA_FACTOR.x;
-            var y = (mouse.current.y - mouse.initial.y) * CAMERA_DELTA_FACTOR.y;
+            var x = (mouse.x - center.x) * CAMERA_DELTA_FACTOR.x;
+            var y = (mouse.y - center.y) * CAMERA_DELTA_FACTOR.y;
             uniforms.camera_delta.value.x +=
                 (x - uniforms.camera_delta.value.x) * CAMERA_SMOOTHING_FACTOR;
             uniforms.camera_delta.value.y +=
