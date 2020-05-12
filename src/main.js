@@ -1,13 +1,15 @@
 var CAMERA_FACTOR = {
-    x: -0.002,
-    y: 0.002,
-    z: 0.01,
+    x: 0.01,
+    y: 0.0,
+    z: -0.023,
 };
-var CAMERA_SMOOTHNESS = 0.1;
+var CAMERA_SMOOTHNESS = 0.05;
 var CAMERA_Z_BOUNDS = {
     min: -1600.0,
     max: 4000.0,
 };
+var SATELLITE_COUNT = 5;
+var BLACK_HOLE_MASS = 0.05;
 
 $.when(loadVertexShader(), loadFragmentShader())
     .done(function(vertexShader, fragmentShader) {
@@ -38,10 +40,29 @@ function initWebGL(vertexShader, fragmentShader) {
     showLoadingText("Loading textures");
 
     (new THREE.TextureLoader()).load("res/andromeda.jpg", function (texture) {
+        var satellite_positions = [];
+        var satellite_velocities = [];
+        for (var i = 0; i < SATELLITE_COUNT; i++) {
+            satellite_positions.push(new THREE.Vector3(
+                0.0,
+                -2.0 + i * 0.2,
+                1.5 + i * 0.4,
+            ));
+            satellite_velocities.push(new THREE.Vector3(
+                0.1 * Math.sqrt(satellite_positions[i].length()),
+                0.0,
+                0.0,
+            ));
+        }
+        var satellites = {
+            positions: satellite_positions,
+            velocities: satellite_velocities,
+        };
         var uniforms = {
             resolution: { type: "v2", value: new THREE.Vector2() },
             texture: { type: "t", value: texture },
             camera_delta: { type: "v4", value: new THREE.Vector4() },
+            satellite_positions: { type: "v3", value: satellite_positions, },
         };
         uniforms.resolution.value.x = window.innerWidth;
         uniforms.resolution.value.y = window.innerHeight;
@@ -61,14 +82,15 @@ function initWebGL(vertexShader, fragmentShader) {
         var mouse = getMouse(container);
 
         hideLoadingScreen();
-        renderLoop(renderer, scene, camera, uniforms, mouse);
+        renderLoop(renderer, scene, camera, uniforms, mouse, satellites);
     });
 }
 
-function renderLoop(renderer, scene, camera, uniforms, mouse) {
+function renderLoop(renderer, scene, camera, uniforms, mouse, satellites) {
     requestAnimationFrame(function () {
-        renderLoop(renderer, scene, camera, uniforms, mouse);
+        renderLoop(renderer, scene, camera, uniforms, mouse, satellites);
     });
+    updateSatellites(uniforms, satellites);
     updateCamera(uniforms, mouse);
     renderFrame(renderer, scene, camera);
 }
@@ -77,10 +99,25 @@ function renderFrame(renderer, scene, camera) {
     renderer.render(scene, camera);
 }
 
+function updateSatellites(uniforms, satellites) {
+    for (var i = 0; i < SATELLITE_COUNT; i++) {
+        var distance = satellites.positions[i].length();
+        var acceleration = BLACK_HOLE_MASS / (distance * distance * distance);
+        satellites.velocities[i].x += -satellites.positions[i].x * acceleration;
+        satellites.velocities[i].y += -satellites.positions[i].y * acceleration;
+        satellites.velocities[i].z += -satellites.positions[i].z * acceleration;
+        satellites.positions[i].x += satellites.velocities[i].x;
+        satellites.positions[i].y += satellites.velocities[i].y;
+        satellites.positions[i].z += satellites.velocities[i].z;
+    }
+    uniforms.satellite_positions.value = satellites.positions;
+}
+
 function updateCamera(uniforms, mouse) {
     var x = (mouse.x - 0.5 * window.innerWidth) * CAMERA_FACTOR.x;
     var y = (mouse.y - 0.5 * window.innerHeight) * CAMERA_FACTOR.y;
-    var z = mouse.z * CAMERA_FACTOR.z;
+    //var z = mouse.z * CAMERA_FACTOR.z;
+    var z = (mouse.x - 0.5 * window.innerWidth) * CAMERA_FACTOR.z;
     uniforms.camera_delta.value.x +=
         (x - uniforms.camera_delta.value.x) * CAMERA_SMOOTHNESS;
     uniforms.camera_delta.value.y +=

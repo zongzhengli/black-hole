@@ -1,6 +1,7 @@
 uniform vec2 resolution;
 uniform sampler2D texture;
 uniform vec4 camera_delta;
+uniform vec3 satellite_positions[5];
 
 const float PI = 3.14159265359;
 const float POV_DEGREES = 50.0;
@@ -9,7 +10,9 @@ const float BACKGROUND_DISTANCE = 10000.0;
 const float SPEED_OF_LIGHT = 1.0;
 const float BLACK_HOLE_RADIUS = 1.0;
 const float STEP_SIZE_FACTOR = 0.01;
+const float SATELLITE_RADIUS = 0.09;
 const int MAX_SIMULATION_STEPS = 200;
+const int SATELLITE_COUNT = 5;
 const vec3 DEFAULT_CAMERA = vec3(0.0, 0.0, 20.0);
 
 struct Ray {
@@ -139,18 +142,24 @@ vec3 compute_force(vec3 position, float h2) {
 /*
  * Returns whether the object fell into the black hole.
  */
-bool simulate_black_hole(inout vec3 position, inout vec3 velocity) {
+float simulate_black_hole(inout vec3 position, inout vec3 velocity) {
     // Some constant needed to get geodesic equation to work
     float h2 = pow(length(cross(position, velocity)), 2.0);
 
     for (int i = 0; i < MAX_SIMULATION_STEPS; i++) {
         float r = length(position);
         if (r >= BACKGROUND_DISTANCE) {
-            return false;
+            return -1.0;
         }
         if (r <= BLACK_HOLE_RADIUS) {
-            return true;
+            return 0.0;
         }
+        for (int j = 0; j < SATELLITE_COUNT; j++) {
+            if (length(position - satellite_positions[j]) < SATELLITE_RADIUS) {
+                return 1.0;
+            }
+        }
+
         float step_size = r * r * STEP_SIZE_FACTOR;
         vec3 delta = velocity * step_size;
 
@@ -163,7 +172,7 @@ bool simulate_black_hole(inout vec3 position, inout vec3 velocity) {
         position += delta;
         velocity += (k1 + 2.0 * (k2 + k3) + k4) / 6.0;
     }
-    return false;
+    return -1.0;
 }
 
 void main() {
@@ -171,8 +180,9 @@ void main() {
 
     vec3 position = vec3(ray.origin);
     vec3 velocity = SPEED_OF_LIGHT * normalize(vec3(ray.direction));
-    if (simulate_black_hole(position, velocity)) {
-        gl_FragColor = vec4(0.0);
+    float result = simulate_black_hole(position, velocity);
+    if (result >= 0.0) {
+        gl_FragColor = vec4(result);
         return;
     }
     ray.origin = vec4(position, 1.0);
